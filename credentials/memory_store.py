@@ -1,4 +1,4 @@
-class InMemoryStore:
+class MemoryStore:
     def __init__(self):
         self.credentials_store = {}
 

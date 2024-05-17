@@ -22,7 +22,3 @@ class AlbyWallet:
         
         payment_response = response.json()
         return payment_response.get("payment_preimage")
-
-# Example usage:
-# alby_service = AlbyPaymentService(api_key="your_alby_api_key")
-# preimage = alby_service.get_preimage("your_invoice_here")

@@ -2,9 +2,9 @@ import sqlite3
 import os
 from credentials.credentials import L402Credentials  # Import the L402Credentials class
 
-class PersistentStore:
-    def __init__(self):
-        self.db_path = os.path.join(os.path.dirname(__file__), '.credentials.db')
+class SQLiteStore:
+    def __init__(self, path=None):
+        self.db_path = path or os.path.join(os.path.expanduser('~'), 'credentials.db')
         self.conn = sqlite3.connect(self.db_path)
         self.create_table()
 
@@ -45,6 +45,7 @@ class PersistentStore:
             SELECT macaroon, preimage, invoice 
             FROM credentials 
             WHERE url = ? AND method = ?
+            ORDER BY created_at DESC
         """, (url, method))
         row = cursor.fetchone()
         if row:
@@ -57,9 +58,10 @@ class PersistentStore:
         cursor.execute("""
             INSERT INTO credentials (url, method, macaroon, preimage, invoice, created_at)
             VALUES (?, ?, ?, ?, ?, datetime('now'))
-        """, (url, method, credentials.macaroon, credentials.preimage, credentials.invoice))  # Assuming credentials are stored as a JSON string
+        """, (url, method, credentials.macaroon, credentials.preimage, credentials.invoice)) 
         self.conn.commit()
 
     def __del__(self):
+        self.conn.close()
         self.conn.close()
         self.conn.close()
