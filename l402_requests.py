@@ -1,11 +1,12 @@
 import requests
 from payments.alby_wallet import AlbyWallet
+from credentials.credentials import parse_l402_challenge
 from credentials.memory import InMemoryStore
-from credentials.credentials import parse_l402_challenge, decode_price
-# from credentials import InMemoryStore, PersistentStore
+from credentials.persistent import PersistentStore
 import os 
 
-
+default_credentials_service = PersistentStore()
+default_payment_service = AlbyWallet(api_key=os.getenv("ALBY_TOKEN"))
 
 class _L402Client:
     _instance = None
@@ -15,8 +16,8 @@ class _L402Client:
             cls._instance = super(_L402Client, cls).__new__(cls)
             # Default services
             # TODO(with jordi): decide on final names for this
-            cls._instance.payment_service = AlbyWallet(api_key=os.getenv("ALBY_TOKEN")) # PreimageProvider, PaymentProvider
-            cls._instance.credentials_service = InMemoryStore() # #CredentialsProvider, CredentialsStore? 
+            cls._instance.payment_service = default_payment_service
+            cls._instance.credentials_service = default_credentials_service
         return cls._instance
 
     def configure(self, payments_service=None, credentials_service=None):

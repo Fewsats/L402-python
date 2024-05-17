@@ -7,7 +7,7 @@ class L402Credentials:
         self.invoice = invoice
 
     def authentication_header(self):
-        return f"L402 {self.macaroon}:{self.preimage}"
+       return f"L402 {self.macaroon}:{self.preimage}"
 
 def parse_l402_challenge(response):
     challenge = response.headers.get('WWW-Authenticate')
@@ -30,8 +30,3 @@ def _parse_challenge(challenge):
     preimage = None
 
     return L402Credentials(macaroon, preimage, invoice)
-
-def decode_price(invoice):
-    # Assuming invoice contains a direct integer value for simplicity
-    return int(invoice)
-    return int(invoice)
