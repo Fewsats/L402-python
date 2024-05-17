@@ -1,0 +1,37 @@
+[project]
+name = "l402"
+version = "0.0.1"
+authors = [
+  { name="Fewsats Inc.", email="jordi@fewsats.com" },
+]
+description = "A Python implementation of the client/server L402 protocol flows"
+readme = "README.md"
+license = { file = "LICENSE" }
+requires-python = ">=3.8"
+classifiers = [
+    "Programming Language :: Python :: 3",
+    "Development Status :: 3 - Alpha",
+    "Intended Audience :: Developers",
+    "Operating System :: OS Independent",
+    "License :: OSI Approved :: MIT License",
+]
+
+dependencies = [
+
+]
+
+[project.urls]
+Homepage = "https://github.com/fewsats/l402-python"
+Issues = "https://github.com/fewsats/l402-python/issues"
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build]
+exclude = [
+    "tests",
+    "*.py[co]",
+    "__pycache__",
+    ".git",
+]
