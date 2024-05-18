@@ -7,8 +7,6 @@ def require_l402_payment(authenticator: Authenticator, get_price_func):
         @wraps(f)
         def decorated_function(*args, **kwargs):
             # Extract the request from kwargs or args as appropriate
-            print('kwargs: ', kwargs)
-            print('args: ', args)
             request = kwargs.get('request') if 'request' in kwargs else args[0]
             l402_header = request.headers.get('Authenticate')
             try:
