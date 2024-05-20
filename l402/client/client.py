@@ -9,7 +9,7 @@ class Client:
     The Client class is a low level HTTP client implementation that handles HTTP requests 
     with 402 Payment Required responses.
     """
-    def __init__(self, preimage_provider: PreimageProvider, credentials_service: CredentialsService):
+    def __init__(self, preimage_provider: PreimageProvider=None, credentials_service: CredentialsService=None):
         self.preimage_provider = preimage_provider
         self.credentials_service = credentials_service
 

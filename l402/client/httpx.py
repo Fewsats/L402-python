@@ -1,35 +1,39 @@
 from .client import Client
+import threading
 
-_httpx_client = Client(None, None)
+thread_local = threading.local()
 
-def _check_httpx_client():
-    return _httpx_client.is_valid()
+def get_client():
+    if not hasattr(thread_local, 'client'):
+        thread_local.client = Client()
+    return thread_local.client
 
 def configure(preimage_provider=None, credentials_service=None):
-    _httpx_client._configure(preimage_provider, credentials_service)
+    get_client()._configure(preimage_provider, credentials_service)
 
 def get(url, **kwargs):
-    _check_httpx_client()
-    return _httpx_client.request('GET', url, **kwargs)
+    client = get_client()
+    return client.request('GET', url, **kwargs)
 
 def post(url, **kwargs):
-    _check_httpx_client()
-    return _httpx_client.request('POST', url, **kwargs)
+    client = get_client()
+    return client.request('POST', url, **kwargs)
 
 def put(url, **kwargs):
-    _check_httpx_client()
-    return _httpx_client.request('PUT', url, **kwargs)
+    client = get_client()
+    return client.request('PUT', url, **kwargs)
 
 def delete(url, **kwargs):
-    _check_httpx_client()
-    return _httpx_client.request('DELETE', url, **kwargs)
+    client = get_client()
+    return client.request('DELETE', url, **kwargs)
 
 
 class AsyncClient:
-    def __init__(self):
-        # TODO(positiveblue): pass the constructor parameters to create 
-        # an instance of the client that is thread-safe.
-        self._client = _httpx_client
+    def __init__(self, preimage_provider=None, credentials_service=None):
+        self._client = get_client()
+        
+        if preimage_provider and credentials_service:
+            self._client = Client(preimage_provider, credentials_service)
 
     async def __aenter__(self):
         if not self._client.is_valid():

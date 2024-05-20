@@ -4,16 +4,13 @@ from .credentials import L402Credentials
 
 class CredentialsService(ABC):
     """
-    Store is an abstract class that defines the interface for storing 
-    and retrieving L402 Credentials.
-
-    TODO(positiveblue): probably rename this to CredentialsService so we 
-    can use it for external servcices as well.
+    CredentialsService is an abstract class that defines the interface for 
+    storing and retrieving L402 Credentials.
     """
     @abstractmethod
     def insert(self, credentials: L402Credentials):
         """
-        Insert a new L402Credentials object into the store.
+        Insert a new L402Credentials in the credentials service.
         """
         pass
 
