@@ -1,7 +1,7 @@
 from .credentials import L402Credentials
-from .store import Store
+from .credentias_service import CredentialsService
 
-class MemoryStore(Store):
+class MemoryStore(CredentialsService):
     """
     MemoryStore is a simple in-memory store for L402Credentials.
 

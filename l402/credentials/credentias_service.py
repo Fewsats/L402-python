@@ -2,7 +2,7 @@ from abc import ABC, abstractmethod
 
 from .credentials import L402Credentials
 
-class Store(ABC):
+class CredentialsService(ABC):
     """
     Store is an abstract class that defines the interface for storing 
     and retrieving L402 Credentials.

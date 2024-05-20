@@ -3,7 +3,7 @@ import sqlite3
 from datetime import datetime
 
 from .credentials import L402Credentials
-from .store import Store
+from .credentias_service import CredentialsService
 
 def adapt_datetime(dt):
     return dt.isoformat()
@@ -13,7 +13,7 @@ def adapt_datetime(dt):
 # The custom adapter converts datetime objects to ISO 8601 string format for storage in the database
 sqlite3.register_adapter(datetime, adapt_datetime)
 
-class SqliteStore(Store):
+class SqliteStore(CredentialsService):
     """
     SqliteStore is an SQLite-based store for L402Credentials.
     """

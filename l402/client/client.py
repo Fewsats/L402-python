@@ -2,14 +2,14 @@ import httpx
 import asyncio
 
 from l402.preimage_provider import PreimageProvider
-from l402.credentials import Store, parse_http_402_response
+from l402.credentials import CredentialsService, parse_http_402_response
 
 class Client:
     """
     The Client class is a low level HTTP client implementation that handles HTTP requests 
     with 402 Payment Required responses.
     """
-    def __init__(self, preimage_provider: PreimageProvider, credentials_service: Store):
+    def __init__(self, preimage_provider: PreimageProvider, credentials_service: CredentialsService):
         self.preimage_provider = preimage_provider
         self.credentials_service = credentials_service
 
