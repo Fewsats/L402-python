@@ -1,8 +1,8 @@
 import httpx
 import asyncio
 
-from l402.preimage_provider import PreimageProvider
-from l402.credentials import CredentialsService, parse_http_402_response
+from .preimage_provider import PreimageProvider
+from .credentials import CredentialsService, parse_http_402_response
 
 class Client:
     """

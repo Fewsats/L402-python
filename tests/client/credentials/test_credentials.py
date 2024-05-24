@@ -1,5 +1,5 @@
 import pytest
-from l402.credentials import L402Credentials, parse_http_402_response, _parse_l402_challenge
+from l402.client.credentials import L402Credentials, parse_http_402_response, _parse_l402_challenge
 from unittest.mock import Mock
 
 def test_l402credentials_initialization():

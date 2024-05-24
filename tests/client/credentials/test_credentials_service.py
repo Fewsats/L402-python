@@ -1,6 +1,5 @@
 import pytest
-from datetime import datetime
-from l402.credentials import L402Credentials, MemoryStore, SqliteStore
+from l402.client.credentials import L402Credentials, MemoryStore, SqliteStore
 
 @pytest.fixture(params=[MemoryStore(), SqliteStore(":memory:")])
 def store(request):

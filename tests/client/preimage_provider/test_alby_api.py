@@ -2,7 +2,7 @@ import json
 import pytest
 from unittest.mock import patch, Mock
 
-from l402.preimage_provider import AlbyAPI
+from l402.client.preimage_provider import AlbyAPI
 
 example_response_body = {
     "amount": 100,

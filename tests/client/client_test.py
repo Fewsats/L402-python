@@ -1,7 +1,6 @@
 import pytest
 from httpx import Response
-from l402.client import Client
-from l402.credentials import L402Credentials
+from l402.client import Client, L402Credentials
 
 def test_add_authorization_header(mocker):
     client = Client(preimage_provider=None, credentials_service=None)
