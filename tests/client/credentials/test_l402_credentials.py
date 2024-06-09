@@ -25,7 +25,7 @@ def test_authentication_header():
 def test_parse_http_402_response_success():
     macaroon = "test_macaroon"
     invoice = "test_invoice"
-    challenge = f'L402 macaroon={macaroon} invoice={invoice}'
+    challenge = f'L402 macaroon="{macaroon}", invoice="{invoice}"'
     
     mock_response = Mock()
     mock_response.headers = {'WWW-Authenticate': challenge}
@@ -46,7 +46,7 @@ def test_parse_http_402_response_missing_header():
 def test_parse_l402_challenge_success():
     macaroon = "test_macaroon"
     invoice = "test_invoice"
-    challenge = f'L402 macaroon={macaroon} invoice={invoice}'
+    challenge = f'L402 macaroon="{macaroon}", invoice="{invoice}"'
     
     credentials = _parse_l402_challenge(challenge)
     
@@ -56,14 +56,14 @@ def test_parse_l402_challenge_success():
 
 def test_parse_l402_challenge_missing_macaroon():
     invoice = "test_invoice"
-    challenge = f'L402 invoice={invoice}'
+    challenge = f'L402 invoice="{invoice}"'
     
-    with pytest.raises(ValueError, match="Challenge parsing failed, macaroon or invoice missing."):
+    with pytest.raises(ValueError, match="Challenge parsing failed"):
         _parse_l402_challenge(challenge)
 
 def test_parse_l402_challenge_missing_invoice():
     macaroon = "test_macaroon"
-    challenge = f'L402 macaroon={macaroon}'
+    challenge = f'L402 macaroon="{macaroon}"'
     
-    with pytest.raises(ValueError, match="Challenge parsing failed, macaroon or invoice missing."):
+    with pytest.raises(ValueError, match="Challenge parsing failed"):
         _parse_l402_challenge(challenge)

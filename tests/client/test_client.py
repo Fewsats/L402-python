@@ -2,7 +2,8 @@ import pytest
 from httpx import Response
 from l402.client import Client, L402Credentials
 
-def test_add_authorization_header(mocker):
+@pytest.mark.asyncio
+async def test_add_authorization_header(mocker):
     client = Client(preimage_provider=None, credentials_service=None)
     
     credentials = mocker.MagicMock(spec=L402Credentials)
@@ -16,7 +17,7 @@ def test_add_authorization_header(mocker):
 
 @pytest.mark.asyncio
 async def test_handle_402_payment_required_success(mocker):
-    client = Client(preimage_provider=mocker.AsyncMock(), credentials_service=mocker.Mock())
+    client = Client(preimage_provider=mocker.AsyncMock(), credentials_service=mocker.AsyncMock())
 
     url = "http://example.com"
     response = mocker.MagicMock(spec=Response)
@@ -27,13 +28,13 @@ async def test_handle_402_payment_required_success(mocker):
     mocker.patch("l402.client.client.parse_http_402_response", return_value=creds)
 
     preimage = "preimage"
-    client.preimage_provider.get_preimage_async.return_value = preimage
+    client.preimage_provider.get_preimage.return_value = preimage
 
     await client._handle_402_payment_required(url, response)
 
-    client.preimage_provider.get_preimage_async.assert_awaited_once_with(creds.invoice)
+    client.preimage_provider.get_preimage.assert_awaited_once_with(creds.invoice)
     assert creds.preimage == preimage
-    client.credentials_service.insert.assert_called_once_with(creds)
+    client.credentials_service.store.assert_awaited_once_with(creds)
 
 @pytest.mark.asyncio
 async def test_handle_402_payment_required_failure(mocker):
@@ -47,19 +48,20 @@ async def test_handle_402_payment_required_failure(mocker):
 
     mocker.patch("l402.client.client.parse_http_402_response", return_value=creds)
 
-    client.preimage_provider.get_preimage_async.return_value = None  # Simulate payment failure
+    # Simulate payment failure
+    client.preimage_provider.get_preimage.return_value = None 
 
     with pytest.raises(Exception) as exc_info:
         await client._handle_402_payment_required(url, response)
 
     assert str(exc_info.value) == "Payment failed."
 
-    client.preimage_provider.get_preimage_async.assert_awaited_once_with(creds.invoice)
+    client.preimage_provider.get_preimage.assert_awaited_once_with(creds.invoice)
 
 @pytest.mark.asyncio
 async def test_make_request_with_existing_creds(mocker):
-    client = Client(preimage_provider=mocker.AsyncMock(), credentials_service=mocker.Mock())
-
+    client = Client(preimage_provider=mocker.AsyncMock(), credentials_service=mocker.AsyncMock())
+ 
     url = "http://example.com"
     method = "GET"
     kwargs = {"data": {"key": "value"}}
@@ -75,7 +77,7 @@ async def test_make_request_with_existing_creds(mocker):
 
     add_authorization_header_mock = mocker.patch.object(client, "_add_authorization_header")
 
-    response = await client._make_request(method, url, **kwargs)
+    response = await client.request(method, url, **kwargs)
 
     assert response == response_mock
     client.credentials_service.get.assert_called_once_with(url)
@@ -84,7 +86,7 @@ async def test_make_request_with_existing_creds(mocker):
 
 @pytest.mark.asyncio
 async def test_make_request_success_without_402(mocker):
-    client = Client(preimage_provider=mocker.AsyncMock(), credentials_service=mocker.Mock())
+    client = Client(preimage_provider=mocker.AsyncMock(), credentials_service=mocker.AsyncMock())
 
     url = "http://example.com"
     method = "GET"
@@ -100,7 +102,7 @@ async def test_make_request_success_without_402(mocker):
 
     add_authorization_header_mock = mocker.patch.object(client, "_add_authorization_header")
 
-    response = await client._make_request(method, url, **kwargs)
+    response = await client.request(method, url, **kwargs)
 
     assert response == response_mock
     client.credentials_service.get.assert_called_once_with(url)
@@ -109,7 +111,7 @@ async def test_make_request_success_without_402(mocker):
 
 @pytest.mark.asyncio
 async def test_make_request_with_402_handling(mocker):
-    client = Client(preimage_provider=mocker.AsyncMock(), credentials_service=mocker.Mock())
+    client = Client(preimage_provider=mocker.AsyncMock(), credentials_service=mocker.AsyncMock())
 
     url = "http://example.com"
     method = "GET"
@@ -129,7 +131,7 @@ async def test_make_request_with_402_handling(mocker):
     handle_402_payment_required_mock = mocker.patch.object(client, "_handle_402_payment_required", return_value=creds)
     add_authorization_header_mock = mocker.patch.object(client, "_add_authorization_header")
 
-    response = await client._make_request(method, url, **kwargs)
+    response = await client.request(method, url, **kwargs)
 
     assert response == response_mock_200
     client.credentials_service.get.assert_called_once_with(url)

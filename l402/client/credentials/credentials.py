@@ -6,6 +6,9 @@ from requests import Response as RequestsResponse
 
 HTTPResponse = Union[RequestsResponse, HTTPXResponse]
 
+MACAROON_REGEX = re.compile(r'macaroon="([^ ]+)"')
+INVOICE_REGEX = re.compile(r'invoice="([^ ]+)"')
+
 class L402Credentials:
     """
     A class to represent the credentials required to authenticate a user trying
@@ -43,17 +46,12 @@ def parse_http_402_response(response: HTTPResponse) -> L402Credentials:
 def _parse_l402_challenge(challenge: str) -> L402Credentials:
     """
     Parse an L402 challenge string. Currently the V0 challenge format is:
-        `L402 macaroon={macaroon} invoice={invoice}`
+        `L402 macaroon="{macaroon}", invoice="{invoice}"`
     """
-
-    # TODO(positiveblue): Some server implementation may include quotes.
-    # This may be fixed in in the future but until then, we need to remove them.
-    challenge = challenge.replace("\"", "")
-
     # TODO(positiveblue): we should check that it has the right format but for 
     # now we will simply patter match the macaroon and invoice.
-    macaroon_match = re.search(r'macaroon=([^ ]+)', challenge)
-    invoice_match = re.search(r'invoice=([^ ]+)', challenge)
+    macaroon_match = MACAROON_REGEX.search(challenge)
+    invoice_match = INVOICE_REGEX.search(challenge)
 
     if not macaroon_match or not invoice_match:
         raise ValueError(

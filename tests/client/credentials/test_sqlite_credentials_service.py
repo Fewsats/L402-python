@@ -1,54 +1,58 @@
 import pytest
-from l402.client.credentials import L402Credentials, MemoryStore, SqliteStore
+from l402.client.credentials import L402Credentials, SqliteCredentialsService
 
-@pytest.fixture(params=[MemoryStore(), SqliteStore(":memory:")])
-def store(request):
+@pytest.fixture(params=[SqliteCredentialsService(":memory:")])
+def db(request):
     return request.param
 
-def test_insert_and_get_credentials(store):
+@pytest.mark.asyncio
+async def test_store_and_get_credentials(db):
     credentials = L402Credentials("macaroon", "preimage", "invoice")
     credentials.set_location("https://example.com")
-    store.insert(credentials)
+    await db.store(credentials)
 
-    retrieved_credentials = store.get("https://example.com")
+    retrieved_credentials = await db.get("https://example.com")
     assert retrieved_credentials is not None
     assert retrieved_credentials.macaroon == "macaroon"
     assert retrieved_credentials.preimage == "preimage"
     assert retrieved_credentials.invoice == "invoice"
     assert retrieved_credentials.location == "https://example.com"
 
-def test_get_non_existent_credentials(store):
-    retrieved_credentials = store.get("https://nonexistent.com")
+@pytest.mark.asyncio
+async def test_get_non_existent_credentials(db):
+    retrieved_credentials = await db.get("https://nonexistent.com")
     assert retrieved_credentials is None
 
-def test_insert_multiple_credentials(store):
+@pytest.mark.asyncio
+async def test_store_multiple_credentials(db):
     credentials1 = L402Credentials("macaroon1", "preimage1", "invoice1")
     credentials1.set_location("https://example.com")
-    store.insert(credentials1)
+    await db.store(credentials1)
 
     credentials2 = L402Credentials("macaroon2", "preimage2", "invoice2")
     credentials2.set_location("https://example.com")
-    store.insert(credentials2)
+    await db.store(credentials2)
 
-    retrieved_credentials = store.get("https://example.com")
+    retrieved_credentials = await db.get("https://example.com")
     assert retrieved_credentials is not None
     assert retrieved_credentials.macaroon == "macaroon2"
     assert retrieved_credentials.preimage == "preimage2"
     assert retrieved_credentials.invoice == "invoice2"
 
-def test_insert_different_locations(store):
+@pytest.mark.asyncio
+async def test_store_different_locations(db):
     credentials1 = L402Credentials("macaroon1", "preimage1", "invoice1")
     credentials1.set_location("https://example1.com")
-    store.insert(credentials1)
+    await db.store(credentials1)
 
     credentials2 = L402Credentials("macaroon2", "preimage2", "invoice2")
     credentials2.set_location("https://example2.com")
-    store.insert(credentials2)
+    await db.store(credentials2)
 
-    retrieved_credentials1 = store.get("https://example1.com")
+    retrieved_credentials1 = await db.get("https://example1.com")
     assert retrieved_credentials1 is not None
     assert retrieved_credentials1.macaroon == "macaroon1"
 
-    retrieved_credentials2 = store.get("https://example2.com")
+    retrieved_credentials2 = await db.get("https://example2.com")
     assert retrieved_credentials2 is not None
     assert retrieved_credentials2.macaroon == "macaroon2"

@@ -4,19 +4,37 @@ from .credentials import L402Credentials
 
 class CredentialsService(ABC):
     """
-    CredentialsService is an abstract class that defines the interface for 
-    storing and retrieving L402 Credentials.
+    Abstract Base Class (ABC) for a Credentials Service.
+
+    A Credentials Service is responsible for storing and retrieving L402 Credentials.
+    Any concrete class that inherits from this ABC must implement the `store` and `get` methods.
     """
+
     @abstractmethod
-    def insert(self, credentials: L402Credentials):
+    async def store(self, credentials: L402Credentials):
         """
-        Insert a new L402Credentials in the credentials service.
+        Abstract method to store a new L402Credentials in the credentials service.
+
+        Args:
+            credentials (L402Credentials): The credentials to be stored.
+
+        Raises:
+            NotImplementedError: This method must be implemented by any concrete class that inherits from this ABC.
         """
         pass
 
     @abstractmethod
-    def get(self, location):
+    async def get(self, location: str):
         """
-        Get the L402Credentials object for the given location.
+        Abstract method to retrieve the L402Credentials object for a given location.
+
+        Args:
+            location (str): The location for which the credentials are to be retrieved.
+
+        Returns:
+            L402Credentials: The credentials associated with the given location.
+
+        Raises:
+            NotImplementedError: This method must be implemented by any concrete class that inherits from this ABC.
         """
         pass

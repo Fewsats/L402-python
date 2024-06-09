@@ -1,52 +1,126 @@
-from .invoice_provider import InvoiceProvider
-from .exceptions import InvalidOrMissingL402Header
-from .sqlite_store import SQLiteStore, Store
 import os
-import base64
-from cryptography.hazmat.primitives import hashes
-from cryptography.hazmat.backends import default_backend
-from cryptography.hazmat.primitives.asymmetric import padding
-from pymacaroons import Macaroon, Verifier
+import re
+import hashlib
+import struct
+from typing import Tuple
+
+from binascii import hexlify, unhexlify
+from pymacaroons import Macaroon, Verifier, MACAROON_V2
+
+from .invoice_provider import InvoiceProvider
+from .macaroons import MacaroonService
+from .exceptions import InvalidOrMissingL402Header, InvalidMacaroon
+    
+# Parse the L402 header pattern: "L402 <macaroon>:<preimage>"
+L402_HEADER_PATTERN = re.compile(r'^L402\s+(.*?):(.*?)$')
+
 
 class Authenticator:
-    def __init__(self, invoice_provider: InvoiceProvider, store: Store):
+    """
+    The Authenticator class implements the L402 authentication protocol. 
+    
+    It can be used to generate new challenges for requests that do not include an L402 header,
+    and also validate the L402 headers in the incoming requests.
+    """
+    def __init__(self, location: str, invoice_provider: InvoiceProvider, macaroon_service: MacaroonService):
+        self.location = location
         self.invoice_provider = invoice_provider
-        self.store = store
+        self.macaroon_service = macaroon_service
 
-    def validate_l402_header(self, header):
-        if not header or not header.startswith("L402 "):
-            raise InvalidOrMissingL402Header("Invalid L402 header format.")
-        parts = header[5:].split(':')
-        if len(parts) != 2:
-            raise InvalidOrMissingL402Header("Header must contain macaroon and preimage.")
-        macaroon, preimage = parts
-        if not macaroon or not preimage:
-            raise InvalidOrMissingL402Header("Macaroon or preimage cannot be empty.")
-
-    def new_challenge(self, price_in_usd_cents):
-        invoice = self.invoice_provider.create_invoice(price_in_usd_cents, "USD", "Fewsats L402 Challenge")
+    async def new_challenge(self, amount: int, currency: str, description: str) -> Tuple[str, str]:
+        """Generate a new L402 challenge with a new macaroon and invoice."""
+        # Create a new invoice
+        payment_request, payment_hash  = await self.invoice_provider.create_invoice(
+            amount, currency, f"L402 Challenge: {description}",
+        )
+        
+        # Generate new revoking keys for the macaroon
         token_id = os.urandom(32)
         root_key = os.urandom(32)
-        self.store.create_root_key(token_id, root_key)
 
-        mac = Macaroon(location="fewsats.com", identifier=token_id.hex(), key=root_key)
-        mac.add_first_party_caveat("time < 2023-01-01T00:00")
+        identifier = self._encode_identifier(0, payment_hash, token_id)
 
-        serialized_macaroon = mac.serialize()
-        return base64.b64encode(serialized_macaroon.encode()).decode(), invoice['payment_request']
+        # Generate a new macaroon with the root key
+        mac = Macaroon(
+            version=MACAROON_V2, 
+            location=self.location,
+            identifier=identifier, 
+            key=root_key,
+        )
 
-    def validate_credentials(self, macaroon, preimage):
-        mac = Macaroon.deserialize(macaroon)
-        root_key = self.store.get_root_key(bytes.fromhex(mac.identifier))
+        # TODO(positiveblue): Add support for custom caveats.
+
+        encoded_macaroon = mac.serialize()
+        await self.macaroon_service.insert_root_key(token_id, root_key, encoded_macaroon)
+
+        return encoded_macaroon, payment_request
+
+    async def validate_l402_header(self, header: str):
+        """Validate the L402 header and its contents."""
+        encoded_macaroon, preimage = self._parse_l402_header(header)
+        mac, payment_hash, token_id = self._decode_macaroon(encoded_macaroon)
+
+        self._validate_preimage(preimage, payment_hash)
+        await self._validate_macaroon(mac, token_id)
+        await self._validate_caveats(mac)
+
+    def _encode_identifier(self, version, payment_hash, token_id):
+        """Encode the L402 identifier."""
+        payment_hash_bytes = unhexlify(payment_hash)
+        return struct.pack(">H32s32s", version, payment_hash_bytes, token_id)
+    
+    def _decode_identifier(self, identifier):
+        """Decode the L402 identifier."""
+        version, payment_hash, token_id = struct.unpack(">H32s32s", identifier)
+        payment_hash_hex = hexlify(payment_hash).decode()
+
+        return version, payment_hash_hex, token_id
+
+    def _parse_l402_header(self, header):
+        """Parse the L402 header and return the encoded macaroon and preimage."""
+        match = L402_HEADER_PATTERN.match(header)
+        if not match:
+            raise InvalidOrMissingL402Header(f"Invalid L402 header format: {header}")
+        
+        encoded_macaroon, preimage = match.groups()
+        if not encoded_macaroon.strip() or not preimage.strip():
+            raise InvalidOrMissingL402Header(f"Macaroon or preimage cannot be empty: {header}")
+        
+        return encoded_macaroon, preimage
+
+    def _decode_macaroon(self, encoded_macaroon):
+        """Return the relevant L402 information from the encoded macaroon."""
+        # Deserialize the macaroon
+        mac = Macaroon.deserialize(encoded_macaroon)
+
+        # Check the version in the macaroon identifier
+        version, payment_hash, token_id = self._decode_identifier(mac.identifier)
+        if version != 0:
+            raise ValueError(f"Invalid L402 version: {version}")
+        
+        return mac, payment_hash, token_id
+    
+    def _validate_preimage(self, preimage: str, payment_hash: str):
+        """Validate the macaoon hash preimage."""
+        preimage_bytes = unhexlify(preimage)
+        computed_hash = hashlib.sha256(preimage_bytes).digest()
+
+        payment_hash_bytes = bytes.fromhex(payment_hash)
+
+        if payment_hash_bytes != computed_hash:
+            raise ValueError("Invalid payment preimage")
+    
+    async def _validate_macaroon(self, mac, token_id):
+        """Verify the macaroon with the linked root key."""
+        root_key = await self.macaroon_service.get_root_key(token_id)
         
         verifier = Verifier()
-        verifier.satisfy_exact("time < 2023-01-01T00:00")
-        if not verifier.verify(mac, root_key):
+        try:
+            verifier.verify(mac, root_key)
+        except Exception:
             raise InvalidMacaroon("Macaroon verification failed.")
-
-        # Verify preimage matches the payment hash in the invoice
-        preimage_hash = hashes.Hash(hashes.SHA256(), backend=default_backend())
-        preimage_hash.update(preimage)
-        if not preimage_hash.finalize() == mac.identifier:
-            raise PaymentMismatch("Preimage does not match payment hash.")
-        return "L402 macaroon=example_macaroon invoice=example_invoice"
+    
+    async def _validate_caveats(self, mac):
+        """Validate the macaroon caveats."""
+        # TODO(positiveblue): Implement custom caveats validation
+        pass
