@@ -1,57 +1,57 @@
+import httpx
+
 from .client import Client
-import threading
+from .preimage_provider import PreimageProvider
+from .credentials import CredentialsService, parse_http_402_response
 
-thread_local = threading.local()
+_default_preimage_provider = None
+_default_credentials_service = None
 
-def get_client():
-    if not hasattr(thread_local, 'client'):
-        thread_local.client = Client()
-    return thread_local.client
+def configure(preimage_provider: PreimageProvider, credentials_service: CredentialsService):
+    global _default_preimage_provider
+    global _default_credentials_service
 
-def configure(preimage_provider=None, credentials_service=None):
-    get_client()._configure(preimage_provider, credentials_service)
+    _default_preimage_provider = preimage_provider
+    _default_credentials_service = credentials_service
+    
+class AsyncClient(httpx.AsyncClient):
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
 
-def get(url, **kwargs):
-    client = get_client()
-    return client.request('GET', url, **kwargs)
-
-def post(url, **kwargs):
-    client = get_client()
-    return client.request('POST', url, **kwargs)
-
-def put(url, **kwargs):
-    client = get_client()
-    return client.request('PUT', url, **kwargs)
-
-def delete(url, **kwargs):
-    client = get_client()
-    return client.request('DELETE', url, **kwargs)
-
-
-class AsyncClient:
-    def __init__(self, preimage_provider=None, credentials_service=None):
-        self._client = get_client()
+        if _default_preimage_provider is None or _default_credentials_service is None:
+            raise Exception("You must configure the client before using it.")
         
-        if preimage_provider and credentials_service:
-            self._client = Client(preimage_provider, credentials_service)
+        self._preimage_provider = _default_preimage_provider
+        self._credentials_service = _default_credentials_service
+    
+    def _add_authorization_header(self, request, credentials):
+        """Adds the L402 Authorization header to the request."""
+        request.headers['Authorization'] = credentials.authentication_header()
 
-    async def __aenter__(self):
-        if not self._client.is_valid():
-            self._client._configure()
-        return self
+    async def _handle_402_payment_required(self, url: str, response: httpx.Response) -> CredentialsService:
+        """Handles a 402 Payment Required response."""
+        creds = parse_http_402_response(response)
+        creds.set_location(url)
+        preimage = await self._preimage_provider.get_preimage(creds.invoice)
+        if not preimage:
+            raise Exception("Payment failed.")
 
-    async def __aexit__(self, exc_type, exc_val, exc_tb):
-        # Clean up resources here, if necessary
-        pass
+        creds.preimage = preimage
+        await self._credentials_service.store(creds)
 
-    async def get(self, url, **kwargs):
-        return await self._client.async_request('GET', url, **kwargs)
+        return creds
+    
+    async def send(self, request, *args, **kwargs):
+        url = str(request.url)
+        creds = await self._credentials_service.get(url)
+        if creds:
+            self._add_authorization_header(request, creds)
 
-    async def post(self, url, **kwargs):
-        return await self._client.async_request('POST', url, **kwargs)
+        response = await super().send(request, *args, **kwargs)
+        if response.status_code != 402:
+            return response
 
-    async def put(self, url, **kwargs):
-        return await self._client.async_request('PUT', url, **kwargs)
-
-    async def delete(self, url, **kwargs):
-        return await self._client.async_request('DELETE', url, **kwargs)
+        new_creds = await self._handle_402_payment_required(url, response)
+        self._add_authorization_header(request, new_creds)
+        return await super().send(request, *args, **kwargs)
+    
