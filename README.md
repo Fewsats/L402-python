@@ -69,7 +69,10 @@ def protected_route():
 
 ## Tutorial
 
-If you want to learn more about the L402 protocol, how to set it up in your own server, or how to use the client library, [this tutorial will help you get started](link-to-tutorial). 
+If you want to learn more about the L402 protocol, how to set it up in your own server, or how to use the client library, we have a notebook tutorial to help you get started:
+* [Colab](https://colab.research.google.com/drive/1MLZy1g6-lFqbRAfFOxR14PZ3b36sYr1r?usp=sharing)
+* [Jupyter Notebook](https://github.com/Fewsats/L402-python/blob/main/examples/l402-tutorial.ipynb) 
+* [Local](examples/l402-tutorial.ipynb)
 
 We'll guide you through the process step by step, providing code examples and explanations along the way. By the end of this tutorial, you'll have a solid understanding of how to integrate internet-native paywalls into your Python applications using the L402 Python Library
 
