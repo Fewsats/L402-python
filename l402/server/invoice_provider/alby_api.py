@@ -24,8 +24,7 @@ class AlbyAPI(InvoiceProvider):
         return url, headers, data
     
     def _process_response(self, response):
-        if response.status_code != 200:
-            raise Exception(f"Unexpected response ({response.status_code}): {response.text}")
+        response.raise_for_status()
 
         try:
             new_invoice_response = response.json()
