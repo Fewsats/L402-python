@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "l402"
-version = "0.0.4"
+version = "0.0.5"
 description = "Python implementation of the client/server L402 protocol flow"
 authors = [
     "Pol Alvarez <pol@fewsats.com>",
@@ -28,6 +28,8 @@ pymacaroons = "^0.13.0"
 fastapi = "^0.111.0"
 starlette = "^0.37.2"
 flask = "^3.0.3"
+python-fasthtml = "^0.2.1"
+
 [tool.poetry.group.dev.dependencies]
 pytest = "^8.1.1"
 pytest-asyncio = "^0.23.6"
