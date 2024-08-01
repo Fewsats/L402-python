@@ -70,3 +70,24 @@ def Flask_l402_decorator(authenticator, pricing_func):
         return wrapper
 
     return decorator
+
+
+def FastHTML_l402_decorator(authenticator: Authenticator, pricing_func):
+    def decorator(func):
+        @wraps(func)
+        async def wrapper(req, *args, **kwargs):
+            header = req.headers.get("Authorization")
+            if header:
+                try:
+                    await authenticator.validate_l402_header(header)
+                    return await func(req, *args, **kwargs)
+                except Exception:
+                    pass
+
+            amount, currency, description = pricing_func(req)
+            macaroon, payment_request = await authenticator.new_challenge(amount, currency, description)
+            resp = Response("Payment Required", status_code=402)
+            resp.headers["WWW-Authenticate"] = f'L402 macaroon="{macaroon}", invoice="{payment_request}"'
+            return resp
+        return wrapper
+    return decorator
