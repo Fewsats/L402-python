@@ -29,6 +29,7 @@ fastapi = ">=0.111.0"
 starlette = ">=0.37.2"
 flask = ">=3.0.3"
 python-fasthtml = ">=0.2.1"
+requests = ">=2.0.0"
 
 [tool.poetry.group.dev.dependencies]
 pytest = ">=8.1.1"
