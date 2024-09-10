@@ -1,6 +1,5 @@
 import httpx
 
-from .client import Client
 from .preimage_provider import PreimageProvider
 from .credentials import CredentialsService, parse_http_402_response
 

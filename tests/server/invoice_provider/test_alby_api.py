@@ -2,6 +2,7 @@ import pytest
 import json
 from unittest.mock import patch, MagicMock
 from l402.server.invoice_provider import AlbyAPI
+from httpx import HTTPStatusError
 
 @pytest.fixture
 def alby_api():
@@ -52,12 +53,13 @@ async def test_create_invoice_unexpected_response(mock_post, alby_api):
     mock_response = MagicMock()
     mock_response.status_code = 500
     mock_response.text = "Internal Server Error"
+    mock_response.raise_for_status.side_effect = HTTPStatusError("Mocked HTTP Error", request=None, response=mock_response)
     mock_post.return_value = mock_response
 
-    with pytest.raises(Exception) as exc_info:
+    with pytest.raises(HTTPStatusError) as exc_info:
         await alby_api.create_invoice(amount, currency, description)
 
-    assert "Unexpected response" in str(exc_info.value)
+    assert "Mocked HTTP Error" in str(exc_info.value)
 
 @pytest.mark.asyncio
 @patch("httpx.AsyncClient.post")

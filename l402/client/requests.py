@@ -1,20 +1,20 @@
 import requests
-from l402.client import Client
 from .exceptions import RequestException
 from .preimage_provider import PreimageProvider
-from .credentials import CredentialsService, parse_http_402_response
+from .credentials import CredentialsService, parse_http_402_response, L402Credentials
 
-class Client(Client):
+class SyncClient:
     def __init__(self, preimage_provider: PreimageProvider = None, 
                  credentials_service: CredentialsService = None):
-        super().__init__(preimage_provider, credentials_service)
-
+        self.preimage_provider = preimage_provider
+        self.credentials_service = credentials_service
+        
     def _add_authorization_header(self, kwargs, credentials):
         """Adds the L402 Authorization header to the request."""
         headers = kwargs.setdefault('headers', {})
         headers['Authorization'] = credentials.authentication_header()
 
-    def _handle_402_payment_required(self, url: str, response: requests.Response) -> CredentialsService:
+    def _handle_402_payment_required(self, url: str, response: requests.Response) -> L402Credentials:
         """Handles a 402 Payment Required response."""
         creds = parse_http_402_response(response)
         creds.set_location(url)
@@ -57,7 +57,7 @@ class Session:
 
     def configure(self, preimage_provider: PreimageProvider = None, credentials_service: CredentialsService = None) -> None:
         """Configure the request client with given providers and services."""
-        self._client = Client(preimage_provider, credentials_service)
+        self._client = SyncClient(preimage_provider, credentials_service)
         self._configured = True
 
     def request(self, method: str, url: str, **kwargs) -> requests.Response:

@@ -1,8 +1,6 @@
-from typing import Tuple, Dict
-
 import httpx
 import json
-
+from typing import Tuple, Dict
 from .preimage_provider import PreimageProvider
 
 class AlbyAPI(PreimageProvider):
@@ -10,7 +8,7 @@ class AlbyAPI(PreimageProvider):
         self.api_key = api_key
         self.alby_url = "https://api.getalby.com"
 
-    async def get_preimage(self, invoice: str) -> str:
+    def get_preimage(self, invoice: str) -> str:
         """
         Retrieves the preimage for the given invoice.
 
@@ -24,8 +22,8 @@ class AlbyAPI(PreimageProvider):
             Exception: If unable to obtain the preimage.
         """
         url, headers, data = self._prepare_request(invoice)
-        async with httpx.AsyncClient(timeout=30.0) as client:
-            response = await client.post(url, headers=headers, content=data)
+        with httpx.Client(timeout=30.0) as client:
+            response = client.post(url, headers=headers, content=data)
             return self._process_response(response)
 
     def _prepare_request(self, invoice: str) -> Tuple[str, str, str]:

@@ -32,10 +32,12 @@ class L402Credentials:
 def parse_http_402_response(response: HTTPResponse) -> L402Credentials:
     """
     Parse the L402 challenge from a http response with an 402 status code.
+    
+    Note: HTTP headers are case-insensitive according to the HTTP specification.
+    The 'WWW-Authenticate' header might appear as 'WWW-authenticate', 'www-authenticate',
+    or any other case variation. The requests library handles this case-insensitivity
+    automatically, so we can reliably use 'WWW-Authenticate' in our code.
     """
-
-    # TODO(positiveblue): check that fastAPI does not change the case of 
-    # headers to lowercase.
     challenge = response.headers.get('WWW-Authenticate')
     if not challenge:
         raise ValueError("WWW-Authenticate header missing.")
@@ -49,7 +51,7 @@ def _parse_l402_challenge(challenge: str) -> L402Credentials:
         `L402 macaroon="{macaroon}", invoice="{invoice}"`
     """
     # TODO(positiveblue): we should check that it has the right format but for 
-    # now we will simply patter match the macaroon and invoice.
+    # now we will simply pattern match the macaroon and invoice.
     macaroon_match = MACAROON_REGEX.search(challenge)
     invoice_match = INVOICE_REGEX.search(challenge)
 

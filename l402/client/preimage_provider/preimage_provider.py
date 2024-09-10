@@ -9,7 +9,7 @@ class PreimageProvider(ABC):
     """
 
     @abstractmethod
-    async def get_preimage(self, invoice: str) -> str:
+    def get_preimage(self, invoice: str) -> str:
         """
         Abstract method to retrieve the preimage for a given invoice.
 

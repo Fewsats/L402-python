@@ -9,9 +9,9 @@ def alby_api():
     api_key = "your_api_key"
     return AlbyAPI(api_key)
 
-@pytest.mark.asyncio
-@patch("httpx.AsyncClient.post")
-async def test_get_preimage_success(mock_post, alby_api):
+
+@patch("httpx.Client.post")
+def test_get_preimage_success(mock_post, alby_api):
     invoice = "fake_invoice"
     expected_response_body = {
         "amount": 100,
@@ -29,7 +29,7 @@ async def test_get_preimage_success(mock_post, alby_api):
     mock_response.json.return_value = expected_response_body
     mock_post.return_value = mock_response
 
-    preimage = await alby_api.get_preimage(invoice)
+    preimage = alby_api.get_preimage(invoice)
     assert preimage == expected_preimage
 
     mock_post.assert_called_once_with(
@@ -42,9 +42,8 @@ async def test_get_preimage_success(mock_post, alby_api):
         content=json.dumps({'invoice': invoice})
     )
 
-@pytest.mark.asyncio
-@patch("httpx.AsyncClient.post")
-async def test_get_preimage_missing_preimage(mock_post, alby_api):
+@patch("httpx.Client.post")
+def test_get_preimage_missing_preimage(mock_post, alby_api):
     invoice = "your_invoice"
     mock_response = Mock()()
     mock_response.status_code = 200
@@ -52,13 +51,13 @@ async def test_get_preimage_missing_preimage(mock_post, alby_api):
     mock_post.return_value = mock_response
 
     with pytest.raises(Exception) as exc_info:
-        await alby_api.get_preimage(invoice)
+        alby_api.get_preimage(invoice)
 
     assert str(exc_info.value) == "Payment preimage not found in response: {}"
 
-@pytest.mark.asyncio
-@patch("httpx.AsyncClient.post")
-async def test_get_preimage_unexpected_response(mock_post, alby_api):
+
+@patch("httpx.Client.post")
+def test_get_preimage_unexpected_response(mock_post, alby_api):
     invoice = "your_invoice"
     mock_response = Mock()()
     mock_response.status_code = 500
@@ -66,13 +65,13 @@ async def test_get_preimage_unexpected_response(mock_post, alby_api):
     mock_post.return_value = mock_response
 
     with pytest.raises(Exception) as exc_info:
-        await alby_api.get_preimage(invoice)
+        alby_api.get_preimage(invoice)
 
     assert "Unexpected response 500" in str(exc_info.value)
 
-@pytest.mark.asyncio
-@patch("httpx.AsyncClient.post")
-async def test_get_preimage_invalid_json_response(mock_post, alby_api):
+
+@patch("httpx.Client.post")
+def test_get_preimage_invalid_json_response(mock_post, alby_api):
     invoice = "your_invoice"
     mock_response = Mock()
     mock_response.status_code = 200
@@ -81,6 +80,6 @@ async def test_get_preimage_invalid_json_response(mock_post, alby_api):
     mock_post.return_value = mock_response
 
     with pytest.raises(Exception) as exc_info:
-        await alby_api.get_preimage(invoice)
+        alby_api.get_preimage(invoice)
 
     assert str(exc_info.value) == "Invalid JSON response: Invalid JSON"

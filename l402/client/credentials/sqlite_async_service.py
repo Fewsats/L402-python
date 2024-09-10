@@ -13,9 +13,9 @@ def adapt_datetime(dt):
 # The custom adapter converts datetime objects to ISO 8601 string format for storage in the database
 sqlite3.register_adapter(datetime, adapt_datetime)
 
-class SqliteCredentialsService():
+class SqliteAsyncService(CredentialsService):
     """
-    SqliteCredentialsService is a synchronous SQLite-based credentials service for L402.
+    SqliteAsyncService is an asynchronous SQLite-based credentials service for L402.
     """
 
     def __init__(self, path=None):
@@ -26,11 +26,26 @@ class SqliteCredentialsService():
     def _create_table(self):
         create_table_sql = """
             CREATE TABLE IF NOT EXISTS credentials (
+                -- id is the primary key of the table.
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
+
+                -- location is the url for the resource.
                 location TEXT NOT NULL,
+
+                -- macaroon is the base64 encoded macaroon needed in the
+                -- L402 request header.
                 macaroon TEXT NOT NULL,
+
+                -- preimage is the preimage linked to the macaroon payment
+                -- hash. Also needed in the L402 request header.
                 preimage TEXT,
+
+                -- invoice is the LN invoice that was paid to complete the
+                -- credentials.
                 invoice TEXT NOT NULL,
+
+                -- created_at is the date and time when the credentials were
+                -- created.
                 created_at DATETIME NOT NULL
             );
             
@@ -40,11 +55,13 @@ class SqliteCredentialsService():
         cursor.executescript(create_table_sql)
         self.conn.commit()
     
-    def store(self, credentials: L402Credentials):
+    async def store(self, credentials: L402Credentials):
         insert_sql = """
             INSERT INTO credentials (
                 location, macaroon, preimage, invoice, created_at
-            ) VALUES (?, ?, ?, ?, ?);
+            ) VALUES (
+                ?, ?, ?, ?, ?
+            );
         """
 
         location = credentials.location
@@ -54,10 +71,13 @@ class SqliteCredentialsService():
         created_at = datetime.now()
 
         cursor = self.conn.cursor()
-        cursor.execute(insert_sql, (location, macaroon, preimage, invoice, created_at))
+        cursor.execute(
+            (insert_sql), 
+            (location, macaroon, preimage, invoice, created_at),
+        )
         self.conn.commit()
     
-    def get(self, location: str):
+    async def get(self, location: str):
         query_sql = """
             SELECT macaroon, preimage, invoice
             FROM credentials
@@ -67,7 +87,9 @@ class SqliteCredentialsService():
         """
 
         cursor = self.conn.cursor()
-        cursor.execute(query_sql, (location,))
+        cursor.execute(
+            query_sql, (location,)
+        )
 
         row = cursor.fetchone()
         if row:
