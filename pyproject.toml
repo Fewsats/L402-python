@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "l402"
-version = "0.0.7"
+version = "0.0.8"
 description = "Python implementation of the client/server L402 protocol flow"
 authors = [
     "Pol Alvarez <pol@fewsats.com>",
