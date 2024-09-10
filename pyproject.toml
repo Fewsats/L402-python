@@ -21,7 +21,7 @@ Homepage = "https://github.com/fewsats/l402-python"
 Issues = "https://github.com/fewsats/l402-python/issues"
 
 [tool.poetry.dependencies]
-python = "^3.8"
+python = ">=3.10"
 
 httpx = ">=0.27.0"
 pymacaroons = ">=0.13.0"
