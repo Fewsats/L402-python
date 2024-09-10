@@ -3,7 +3,8 @@ from l402.client import requests
 from l402.client.preimage_provider import AlbyAPI
 from l402.client.credentials import SqliteCredentialsService
 
-# Configure the client with AlbyAPI and SqliteCredentialsService
+SERVER_URL = "https://api.fewsats.com"
+
 alby_token = os.getenv("ALBY_TOKEN")
 if not alby_token:
     raise ValueError("ALBY_TOKEN environment variable is not set")
@@ -13,21 +14,14 @@ requests.configure(
     credentials_service=SqliteCredentialsService()
 )
 
-# Example URL that requires L402 authentication
-protected_url = "https://api.fewsats.com/v0/storage/download/2e54ac29-5945-4b5f-93db-998a535a5a49"
+external_id = '2e54ac29-5945-4b5f-93db-998a535a5a49'
+response = requests.get(f"{SERVER_URL}/v0/storage/download/{external_id}")
 
-# Make a GET request to the protected resource
-response = requests.get(protected_url)
-
-# Check if the request was successful
 response.raise_for_status()
 
-# Get the file name and extension from the response headers
 file_name = response.headers.get("File-Name", "downloaded_file")
 
-# Save the response content as a file
 with open(f"{file_name}.jpg", "wb") as f:
     f.write(response.content)
-
 
 print(f"\nFile '{file_name}' downloaded successfully.")
